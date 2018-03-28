@@ -219,9 +219,11 @@ async function main() {
 
     let lastblock = await fn("SELECT DISTINCT block_id FROM `post` order by block_id desc LIMIT 1");
 
-    lastblock = lastblock[0]['block_id'];
-
-    var stream = steem.blockchain.getBlockNumberStream({from:lastblock})
+    if (lastblock.length === 1) {
+        lastblock = lastblock[0]['block_id'];
+        var stream = steem.blockchain.getBlockNumberStream({from: lastblock});
+    } else
+        var stream = steem.blockchain.getBlockNumberStream();
 
     stream.pipe(es.map(function(block, callback) {
         callback(null, parseBlock(block))
