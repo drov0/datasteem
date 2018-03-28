@@ -192,7 +192,6 @@ async function update_data()
         const posts = await fn("select author, permlink from post where date > ? AND ?-last_updated > 3600", [_6_days_ago,now]);
 
         for (let i = 0; i < posts.length; i++) {
-            console.log(i);
             const data = await
             get_steem_data(posts[i]['author'], posts[i]['permlink']);
 
