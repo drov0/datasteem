@@ -1,0 +1,17 @@
+{
+  "name": "steemdata",
+  "version": "1.0.0",
+  "description": "Parses the blockchain into a mysqldb",
+  "main": "steemdata.js",
+  "dependencies": {
+    "dsteem": "^0.8.7",
+    "mysql": "^2.15.0",
+    "steem": "^0.7.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Martin Lees",
+  "license": "GNU"
+}
