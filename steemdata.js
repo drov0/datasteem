@@ -140,21 +140,7 @@ function get_steem_data(username, permlink){
     });
 }
 
-async function main() {
 
-    var stream = steem.blockchain.getBlockNumberStream()
-
-    stream.pipe(es.map(function(block, callback) {
-        callback(null, parseBlock(block))
-    }))
-
-
-    while (true)
-    {
-        await update_data();
-        await update_user();
-    }
-}
 
 
 async function update_user()
@@ -204,7 +190,21 @@ async function update_data()
 }
 
 
+async function main() {
 
+    var stream = steem.blockchain.getBlockNumberStream()
+
+    stream.pipe(es.map(function(block, callback) {
+        callback(null, parseBlock(block))
+    }))
+
+
+    while (true)
+    {
+        await update_data();
+        await update_user();
+    }
+}
 
 main();
 
