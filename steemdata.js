@@ -217,6 +217,8 @@ function wait(time)
 
 async function main() {
 
+    console.log("Starting steemdata");
+
     let lastblock = await fn("SELECT DISTINCT block_id FROM `post` order by block_id desc LIMIT 1");
 
     if (lastblock.length === 1) {
@@ -235,7 +237,7 @@ async function main() {
         const posts_count = await update_data();
         const user_count = await update_user();
         if (posts_count === 0 && user_count === 0)
-            await wait(4); // we are up to date, waiting one block
+            await wait(15); // we are up to date, waiting one block
     }
 }
 
