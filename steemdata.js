@@ -52,12 +52,12 @@ async function parseBlock(blocknb)
                    if (json_metadata['image'] && json_metadata['image'].length > 0)
                        img = json_metadata['image'][0];
 
-                   fn("INSERT INTO `post` (`id`,`block_id`, `author`, `title`,`date`, `text`, `permlink`, `image`, `tag1`, `tag2`, `tag3`, `tag4`, `tag5`, `json_metadata`, `reward`, `comments`, `upvotes`, `last_updated`) VALUES(NULL,?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,-1,-1,-1,-1)",
+                   await fn("INSERT INTO `post` (`id`,`block_id`, `author`, `title`,`date`, `text`, `permlink`, `image`, `tag1`, `tag2`, `tag3`, `tag4`, `tag5`, `json_metadata`, `reward`, `comments`, `upvotes`, `last_updated`) VALUES(NULL,?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,-1,-1,-1,-1)",
                            [blocknb, post['author'] , post['title'], time, "", post['permlink'],img , post['parent_permlink'], (tags[1] ? tags[1] : ''), (tags[2] ? tags[2] : ''), (tags[3] ? tags[3] : ''), (tags[4] ? tags[4] : ''), post['json_metadata']])
 
                    // update/add user
                    const data = await get_user_data(post['author']);
-                   fn("INSERT INTO user(`id`, `username`, `reputation`, `steem_posts`, `steem_join`, `followers`, `following`, `sp`, `delegated_sp`, last_updated) VALUES(NULL, ?,?,?,?,?,?,?,?,?)" +
+                   await fn("INSERT INTO user(`id`, `username`, `reputation`, `steem_posts`, `steem_join`, `followers`, `following`, `sp`, `delegated_sp`, last_updated) VALUES(NULL, ?,?,?,?,?,?,?,?,?)" +
                        " ON DUPLICATE KEY UPDATE reputation = ?, steem_posts = ?, followers = ?, following = ?, sp = ?, delegated_sp = ?, last_updated = ?",
                        [post['author'], data['reputation'], data['post_count'], data['join_date'], data['followers'], data['following'], data['sp'], data['delegated'],Math.floor(new Date().getTime() / 1000),
                            data['reputation'], data['post_count'], data['followers'], data['following'], data['sp'], data['delegated'],Math.floor(new Date().getTime() / 1000)])
@@ -72,7 +72,7 @@ async function parseBlock(blocknb)
 
                    const data = await get_steem_data(vote['author'], vote['permlink']);
 
-                   fn("update post set text = ?, reward = ?, comments = ?, upvotes = ?, last_updated = ? where author = ? AND permlink = ?",
+                   await fn("update post set text = ?, reward = ?, comments = ?, upvotes = ?, last_updated = ? where author = ? AND permlink = ?",
                        [data['text'], data['reward'], data['comments'], data['upvotes'], time, vote['author'], vote['permlink']]);
             }
            }
@@ -170,7 +170,7 @@ async function update_user()
         const users = await fn("select username from user WHERE ?-last_updated > 10800", [now]);
         for (let i = 0; i < users.length; i++) {
             const data = await get_user_data(users[i]['author']);
-            fn("UPDATE reputation = ?, steem_posts = ?, followers = ?, following = ?, sp = ?, delegated_sp = ?, last_updated = ? WHERE username = ?",
+            await fn("UPDATE reputation = ?, steem_posts = ?, followers = ?, following = ?, sp = ?, delegated_sp = ?, last_updated = ? WHERE username = ?",
                 [data['reputation'], data['post_count'], data['followers'], data['following'], data['sp'], data['delegated'],Math.floor(new Date().getTime() / 1000),users[i]['author'] ])
         }
 
@@ -192,7 +192,7 @@ async function update_data()
             const data = await
             get_steem_data(posts[i]['author'], posts[i]['permlink']);
 
-            fn("update post set text = ?, reward = ?, comments = ?, upvotes = ?, last_updated = ? where author = ? AND permlink = ?",
+            await fn("update post set text = ?, reward = ?, comments = ?, upvotes = ?, last_updated = ? where author = ? AND permlink = ?",
                 [data['text'], data['reward'], data['comments'], data['upvotes'],Math.floor(new Date().getTime() / 1000), posts[i]['author'], posts[i]['permlink']])
 
         }
