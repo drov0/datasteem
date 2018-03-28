@@ -63,7 +63,10 @@ async function parseBlock(blocknb)
                            data['reputation'], data['post_count'], data['followers'], data['following'], data['sp'], data['delegated'],Math.floor(new Date().getTime() / 1000)])
 
                }
-           } else if (tx[i]['operations'][y][0] === "vote")
+           } /*
+           // TODO : Find a way to optimize.
+
+           else if (tx[i]['operations'][y][0] === "vote")
            {
                const vote = tx[i]['operations'][y][1];
                const exists = await fn("select id from post where author = ? AND permlink = ?", [vote['author'], vote['permlink']]);
@@ -75,7 +78,7 @@ async function parseBlock(blocknb)
                    await fn("update post set text = ?, reward = ?, comments = ?, upvotes = ?, last_updated = ? where author = ? AND permlink = ?",
                        [data['text'], data['reward'], data['comments'], data['upvotes'], time, vote['author'], vote['permlink']]);
             }
-           }
+           }*/
         }
     }
 
@@ -189,6 +192,7 @@ async function update_data()
         const posts = await fn("select author, permlink from post where date > ? AND ?-last_updated > 3600", [_6_days_ago,now]);
 
         for (let i = 0; i < posts.length; i++) {
+            console.log(i);
             const data = await
             get_steem_data(posts[i]['author'], posts[i]['permlink']);
 
@@ -214,7 +218,11 @@ function wait(time)
 
 async function main() {
 
-    var stream = steem.blockchain.getBlockNumberStream()
+    let lastblock = await fn("SELECT DISTINCT block_id FROM `post` order by block_id desc LIMIT 1");
+
+    lastblock = lastblock[0]['block_id'];
+
+    var stream = steem.blockchain.getBlockNumberStream({from:lastblock})
 
     stream.pipe(es.map(function(block, callback) {
         callback(null, parseBlock(block))
