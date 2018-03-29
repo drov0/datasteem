@@ -21,9 +21,6 @@ function setupSteemjs() {
 
 async function parseBlock(blocknb)
 {
-
-    console.log(blocknb);
-
     const block = await steem.database.getBlock(blocknb)
     const tx = block['transactions'];
 
