@@ -169,6 +169,8 @@ async function update_user()
         const now = Math.floor(new Date().getTime() / 1000);
         const users = await fn("select username from user WHERE ?-last_updated > 10800", [now]);
         for (let i = 0; i < users.length; i++) {
+            if (i%100 === 0)
+                console.log("updating user data "+i+"/"+users.length)
             const data = await get_user_data(users[i]['author']);
             await fn("UPDATE reputation = ?, steem_posts = ?, followers = ?, following = ?, sp = ?, delegated_sp = ?, last_updated = ? WHERE username = ?",
                 [data['reputation'], data['post_count'], data['followers'], data['following'], data['sp'], data['delegated'],Math.floor(new Date().getTime() / 1000),users[i]['author'] ])
@@ -189,6 +191,8 @@ async function update_data()
         const posts = await fn("select author, permlink from post where date > ? AND ?-last_updated > 3600", [_6_days_ago,now]);
 
         for (let i = 0; i < posts.length; i++) {
+            if (i%100 === 0)
+                console.log("updating user data "+i+"/"+users.length)
             const data = await
             get_steem_data(posts[i]['author'], posts[i]['permlink']);
 
