@@ -192,7 +192,7 @@ async function update_data()
 
         for (let i = 0; i < posts.length; i++) {
             if (i%100 === 0)
-                console.log("updating user data "+i+"/"+users.length)
+                console.log("updating user data "+i+"/"+posts.length)
             const data = await
             get_steem_data(posts[i]['author'], posts[i]['permlink']);
 
