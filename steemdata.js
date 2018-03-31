@@ -182,7 +182,7 @@ async function update_user()
     });
 }
 
-async function update_data()
+async function update_post()
 {
     console.log("Updating post data");
     return new Promise(async resolve => {
@@ -196,9 +196,8 @@ async function update_data()
             const data = await
             get_steem_data(posts[i]['author'], posts[i]['permlink']);
 
-            await fn("update post set text = ?, reward = ?, comments = ?, upvotes = ?, last_updated = ? where author = ? AND permlink = ?",
-                [data['text'], data['reward'], data['comments'], data['upvotes'],Math.floor(new Date().getTime() / 1000), posts[i]['author'], posts[i]['permlink']])
-
+            await fn("update post set reward = ?, comments = ?, upvotes = ?, last_updated = ? where author = ? AND permlink = ?",
+                [data['reward'], data['comments'], data['upvotes'],Math.floor(new Date().getTime() / 1000), posts[i]['author'], posts[i]['permlink']])
         }
 
         console.log("finished updating "+posts.length.toString()+" posts in "+(Math.floor(new Date().getTime() / 1000)- now).toString()+ "seconds");
@@ -235,7 +234,7 @@ async function main() {
 
     while (true)
     {
-        const posts_count = await update_data();
+        const posts_count = await update_post();
         const user_count = await update_user();
         if (posts_count === 0 && user_count === 0)
             await wait(15); // we are up to date, waiting one block
