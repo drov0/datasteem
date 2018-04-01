@@ -93,8 +93,7 @@ function get_user_data(username) {
                 return resolve(get_user_data(username));
             }
             const reputation = steemjs.formatter.reputation(account[0].reputation);
-            var vesting_shares, delegated_vesting_shares, received_vesting_shares, total_vesting_shares,
-                total_vesting_fund_steem = null;
+            var vesting_shares, delegated_vesting_shares, received_vesting_shares, total_vesting_shares = null;
             vesting_shares = account[0].vesting_shares;
             delegated_vesting_shares = account[0].delegated_vesting_shares;
             received_vesting_shares = account[0].received_vesting_shares;
