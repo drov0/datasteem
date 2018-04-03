@@ -185,6 +185,32 @@ function wait(time) {
 }
 
 
+
+
+async function update_post()
+{
+    console.log("Updating post data");
+    return new Promise(async resolve => {
+        const _6_days_ago = Math.floor(new Date().getTime() / 1000) - 86400 * 6;
+        const now = Math.floor(new Date().getTime() / 1000);
+        const posts = await fn("select author, permlink from post where date > ? AND ?-last_updated > 7200", [_6_days_ago,now]);
+
+        for (let i = 0; i < posts.length; i++) {
+            if (i%50 === 0)
+                console.log("updating post data "+i+"/"+posts.length)
+            const data = await
+                get_steem_data(posts[i]['author'], posts[i]['permlink']);
+
+            await fn("update post set reward = ?, comments = ?, upvotes = ?, last_updated = ? where author = ? AND permlink = ?",
+                [data['reward'], data['comments'], data['upvotes'],Math.floor(new Date().getTime() / 1000), posts[i]['author'], posts[i]['permlink']])
+        }
+
+        console.log("finished updating "+posts.length.toString()+" posts in "+(Math.floor(new Date().getTime() / 1000)- now).toString()+ "seconds");
+
+        resolve(posts.length)
+    });
+}
+
 async function main() {
     console.log("Starting steemdata");
 
@@ -201,12 +227,13 @@ async function main() {
 
     stream.pipe(es.map(function (block, callback) {
         callback(null, parseBlock(block))
-    }))
+    }));
 
     while (true)
    {
        const user_count = await update_user();
-       if (user_count === 0)
+       const post_count = await update_post();
+       if (user_count === 0 && post_count === 0)
            await wait(15); // we are up to date, waiting one block
     }
 }
