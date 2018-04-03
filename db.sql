@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Mar 28, 2018 at 03:10 AM
+-- Generation Time: Apr 03, 2018 at 03:46 PM
 -- Server version: 5.7.21-0ubuntu0.17.10.1
 -- PHP Version: 7.1.15-0ubuntu0.17.10.1
 
@@ -21,8 +21,20 @@ SET time_zone = "+00:00";
 --
 -- Database: `steemdata`
 --
-CREATE DATABASE IF NOT EXISTS `steemdata` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `steemdata`;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `exist`
+--
+
+DROP TABLE IF EXISTS `exist`;
+CREATE TABLE `exist` (
+  `id` int(11) NOT NULL,
+  `post_id` int(11) NOT NULL,
+  `author` tinytext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `permlink` text COLLATE utf8mb4_unicode_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -30,6 +42,7 @@ USE `steemdata`;
 -- Table structure for table `post`
 --
 
+DROP TABLE IF EXISTS `post`;
 CREATE TABLE `post` (
   `id` int(11) NOT NULL,
   `block_id` int(20) NOT NULL,
@@ -47,7 +60,8 @@ CREATE TABLE `post` (
   `json_metadata` mediumtext COLLATE utf8mb4_unicode_ci NOT NULL,
   `reward` float NOT NULL,
   `comments` int(11) NOT NULL,
-  `upvotes` int(11) NOT NULL
+  `upvotes` int(11) NOT NULL,
+  `last_updated` int(15) NOT NULL DEFAULT '-1'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -56,6 +70,7 @@ CREATE TABLE `post` (
 -- Table structure for table `user`
 --
 
+DROP TABLE IF EXISTS `user`;
 CREATE TABLE `user` (
   `id` int(11) NOT NULL,
   `username` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -65,12 +80,19 @@ CREATE TABLE `user` (
   `followers` float NOT NULL,
   `following` float NOT NULL,
   `sp` int(11) NOT NULL,
-  `delegated_sp` int(11) NOT NULL
+  `delegated_sp` int(11) NOT NULL,
+  `last_updated` int(11) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Indexes for dumped tables
 --
+
+--
+-- Indexes for table `exist`
+--
+ALTER TABLE `exist`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `post`
@@ -90,16 +112,22 @@ ALTER TABLE `user`
 --
 
 --
+-- AUTO_INCREMENT for table `exist`
+--
+ALTER TABLE `exist`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `post`
 --
 ALTER TABLE `post`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `user`
 --
 ALTER TABLE `user`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
