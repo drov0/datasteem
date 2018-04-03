@@ -19,7 +19,6 @@ function setupSteemjs() {
 async function parseBlock(blocknb) {
     const block = await steem.database.getBlock(blocknb)
     const tx = block['transactions'];
-    console.log(blocknb);
     const time = (new Date(Date.parse(block['timestamp']))).getTime() / 1000;
 
     for (let i = 0; i < tx.length; i++) {
@@ -31,7 +30,8 @@ async function parseBlock(blocknb) {
                 {
                     var json_metadata = [];
                     try {
-                        json_metadata = JSON.parse(post['json_metadata'])
+                        if (post['json_metadata'] !== "")
+                            json_metadata = JSON.parse(post['json_metadata'])
                     } catch (e) {
                         console.log(e)
                     }
@@ -42,10 +42,10 @@ async function parseBlock(blocknb) {
                     if (json_metadata['image'] && json_metadata['image'].length > 0)
                         img = json_metadata['image'][0];
 
-                    await fn("INSERT INTO `post` (`id`,`block_id`, `author`, `title`,`date`, `text`, `permlink`, `image`, `tag1`, `tag2`, `tag3`, `tag4`, `tag5`, `json_metadata`, `reward`, `comments`, `upvotes`, `last_updated`) VALUES(NULL,?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,-1,-1,-1,-1)",
+                    const inserted =  await fn("INSERT INTO `post` (`id`,`block_id`, `author`, `title`,`date`, `text`, `permlink`, `image`, `tag1`, `tag2`, `tag3`, `tag4`, `tag5`, `json_metadata`, `reward`, `comments`, `upvotes`, `last_updated`) VALUES(NULL,?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,-1,-1,-1,-1)",
                         [blocknb, post['author'], post['title'], time, "", post['permlink'], img, post['parent_permlink'], (tags[1] ? tags[1] : ''), (tags[2] ? tags[2] : ''), (tags[3] ? tags[3] : ''), (tags[4] ? tags[4] : ''), post['json_metadata']])
 
-                    await fn("insert into exist(id, author, permlink) values(NULL, ?, ?)", [post['author'], post['permlink']])
+                    await fn("insert into exist(id, post_id, author, permlink) values(NULL, ?, ?, ?)", [inserted['insertId'], post['author'], post['permlink']])
 
                     // update/add user
                     const data = await get_user_data(post['author']);
@@ -56,7 +56,7 @@ async function parseBlock(blocknb) {
 
                 }
             }
-            // TODO : Find a way to optimize.
+            // TODO : Try to do group calls
 
             else if (tx[i]['operations'][y][0] === "vote") {
                 //console.log("vote");
