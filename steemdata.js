@@ -92,37 +92,37 @@ function get_user_data(username, properties) {
             delegated_vesting_shares = account[0].delegated_vesting_shares;
             received_vesting_shares = account[0].received_vesting_shares;
 
-                // Handle Promises, when you’re sure the two functions were completed simply do:
-                var steem_power = steemjs.formatter.vestToSteem(vesting_shares, properties['total_vesting_shares'], properties['total_vesting_fund']);
-                var delegated_steem_power = steemjs.formatter.vestToSteem((received_vesting_shares.split(' ')[0] - delegated_vesting_shares.split(' ')[0]) + ' VESTS', properties['total_vesting_shares'], properties['total_vesting_fund']);
+            // Handle Promises, when you’re sure the two functions were completed simply do:
+            var steem_power = steemjs.formatter.vestToSteem(vesting_shares, properties['total_vesting_shares'], properties['total_vesting_fund']);
+            var delegated_steem_power = steemjs.formatter.vestToSteem((received_vesting_shares.split(' ')[0] - delegated_vesting_shares.split(' ')[0]) + ' VESTS', properties['total_vesting_shares'], properties['total_vesting_fund']);
 
-                steem_power = Math.floor(steem_power * 1000) / 1000
-                delegated_steem_power = Math.floor(delegated_steem_power * 1000) / 1000
-                steemjs.api.getFollowCount(username, function (err, follow_data) {
+            steem_power = Math.floor(steem_power * 1000) / 1000
+            delegated_steem_power = Math.floor(delegated_steem_power * 1000) / 1000
+            steemjs.api.getFollowCount(username, function (err, follow_data) {
                     if (err) {
                         console.log(err)
                         return resolve(get_user_data(username, properties));
                     }
 
-                    const followers = follow_data.follower_count;
-                    const following = follow_data.following_count;
+            const followers = follow_data.follower_count;
+            const following = follow_data.following_count;
 
-                    const post_count = account[0].post_count;
-                    const join_date = new Date(account[0].created).getTime() / 1000;
+            const post_count = account[0].post_count;
+            const join_date = new Date(account[0].created).getTime() / 1000;
 
 
-                    resolve({
-                        "followers": followers,
-                        "reputation": reputation,
-                        "sp": steem_power,
-                        "delegated": delegated_steem_power,
-                        "following": following,
-                        "post_count": post_count,
-                        "join_date": join_date
-                    });
-                });
+            resolve({
+                "followers": followers,
+                "reputation": reputation,
+                "sp": steem_power,
+                "delegated": delegated_steem_power,
+                "following": following,
+                "post_count": post_count,
+                "join_date": join_date
             });
         });
+    });
+});
 }
 
 
