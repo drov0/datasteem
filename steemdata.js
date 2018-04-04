@@ -46,7 +46,7 @@ async function parseBlock(blocknb) {
                     const inserted =  await fn("INSERT INTO `post` (`id`,`block_id`, `author`, `title`,`date`, `text`, `permlink`, `image`, `tag1`, `tag2`, `tag3`, `tag4`, `tag5`, `json_metadata`, `reward`, `comments`, `upvotes`, `last_updated`) VALUES(NULL,?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,0,0,0,0)",
                         [blocknb, post['author'], post['title'], time, post['body'], post['permlink'], img, post['parent_permlink'], (tags[1] ? tags[1] : ''), (tags[2] ? tags[2] : ''), (tags[3] ? tags[3] : ''), (tags[4] ? tags[4] : ''), post['json_metadata']])
 
-                    await fn("insert into exist(id, post_id, author, permlink) values(NULL, ?, ?, ?)", [inserted['insertId'], post['author'], post['permlink']])
+                    //await fn("insert into exist(id, post_id, author, permlink) values(NULL, ?, ?, ?)", [inserted['insertId'], post['author'], post['permlink']])
 
                     // update/add user
                     const data = await get_user_data(post['author'], properties);
