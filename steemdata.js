@@ -20,6 +20,7 @@ async function parseBlock(blocknb) {
     const block = await steem.database.getBlock(blocknb)
     const tx = block['transactions'];
     const time = (new Date(Date.parse(block['timestamp']))).getTime() / 1000;
+    const properties = await get_propreties();
 
     for (let i = 0; i < tx.length; i++) {
         for (let y = 0; y < tx[i]['operations'].length; y++) {
@@ -48,28 +49,38 @@ async function parseBlock(blocknb) {
                     await fn("insert into exist(id, post_id, author, permlink) values(NULL, ?, ?, ?)", [inserted['insertId'], post['author'], post['permlink']])
 
                     // update/add user
-                    const properties = await get_propreties();
                     const data = await get_user_data(post['author'], properties);
                     await fn("INSERT INTO user(`id`, `username`, `reputation`, `steem_posts`, `steem_join`, `followers`, `following`, `sp`, `delegated_sp`, last_updated) VALUES(NULL, ?,?,?,?,?,?,?,?,?)" +
                         " ON DUPLICATE KEY UPDATE reputation = ?, steem_posts = ?, followers = ?, following = ?, sp = ?, delegated_sp = ?, last_updated = ?",
                         [post['author'], data['reputation'], data['post_count'], data['join_date'], data['followers'], data['following'], data['sp'], data['delegated'], Math.floor(new Date().getTime() / 1000),
                             data['reputation'], data['post_count'], data['followers'], data['following'], data['sp'], data['delegated'], Math.floor(new Date().getTime() / 1000)])
 
+                } else
+                {
+                    // comment
+                    const root_post = await get_root_post(post['author'], post['permlink'])
+                    await fn("update post set comments = comments + 1 where author = ? AND permlink = ?",
+                        [root_post['root_author'], root_post['root_permlink']]);
+
+                    await fn("UPDATE user SET steem_posts = steem_posts +1 WHERE username  = ?",
+                        [post['author']])
+
                 }
             }
             // TODO : Try to do group calls
 
             else if (tx[i]['operations'][y][0] === "vote") {
-                //console.log("vote");
                 const vote = tx[i]['operations'][y][1];
-                const exists = await fn("select post_id from exist where author = ? AND permlink = ?", [vote['author'], vote['permlink']]);
-
-                if (exists.length !== 0) {
                     const data = await get_steem_data(vote['author'], vote['permlink']);
 
-                    await fn("update post set reward = ?, comments = ?, upvotes = ?, last_updated = ? where id = ?",
-                        [data['reward'], data['comments'], data['upvotes'], time, exists[0]['post_id']]);
-                }
+                    await fn("update post set reward = ?, comments = ?, upvotes = ?, last_updated = ? where author = ? AND permlink = ?",
+                        [data['reward'], data['comments'], data['upvotes'], time, vote['author'], vote['permlink']]);
+
+                    const data_user = await get_user_data(vote['author'], properties);
+
+                    await fn("UPDATE user SET reputation = ?, steem_posts = ?, followers = ?, following = ?, sp = ?, delegated_sp = ?, last_updated = ? WHERE username  = ?",
+                    [data_user['reputation'], data_user['post_count'], data_user['followers'], data_user['following'], data_user['sp'], data_user['delegated'], Math.floor(new Date().getTime() / 1000), vote['author']])
+
             }
         }
     }
@@ -77,6 +88,20 @@ async function parseBlock(blocknb) {
 
 }
 
+
+function get_root_post(author, permlink)
+{
+    return new Promise(resolve => {
+        const steemjs = setupSteemjs();
+        steemjs.api.getContent(author, permlink, function (err, post) {
+            if (err) {
+                console.log(err);
+                return resolve(get_root_post(author, permlink));
+            }
+            resolve({"root_permlink":post['root_permlink'], "root_author": post['root_author']});
+        });
+    });
+}
 
 function get_user_data(username, properties) {
     return new Promise(resolve => {
@@ -246,10 +271,10 @@ async function main() {
 
     while (true)
    {
-       const user_count = await update_user();
-       const post_count = await update_post();
-       if (user_count === 0 && post_count === 0)
-           await wait(15); // we are up to date, waiting one block
+       //const user_count = await update_user();
+       //const post_count = await update_post();
+       //if (user_count === 0 && post_count === 0)
+       //    await wait(15); // we are up to date, waiting one block
     }
 }
 
