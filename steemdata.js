@@ -71,14 +71,14 @@ async function parseBlock(blocknb) {
 
             else if (tx[i]['operations'][y][0] === "vote") {
                 const vote = tx[i]['operations'][y][1];
-                    const data = await get_steem_data(vote['author'], vote['permlink']);
+                const data = await get_steem_data(vote['author'], vote['permlink']);
 
-                    await fn("update post set reward = ?, comments = ?, upvotes = ?, last_updated = ? where author = ? AND permlink = ?",
-                        [data['reward'], data['comments'], data['upvotes'], time, vote['author'], vote['permlink']]);
+                await fn("update post set reward = ?, comments = ?, upvotes = ?, last_updated = ? where author = ? AND permlink = ?",
+                    [data['reward'], data['comments'], data['upvotes'], time, vote['author'], vote['permlink']]);
 
-                    const data_user = await get_user_data(vote['author'], properties);
+                const data_user = await get_user_data(vote['author'], properties);
 
-                    await fn("UPDATE user SET reputation = ?, steem_posts = ?, followers = ?, following = ?, sp = ?, delegated_sp = ?, last_updated = ? WHERE username  = ?",
+                await fn("UPDATE user SET reputation = ?, steem_posts = ?, followers = ?, following = ?, sp = ?, delegated_sp = ?, last_updated = ? WHERE username  = ?",
                     [data_user['reputation'], data_user['post_count'], data_user['followers'], data_user['following'], data_user['sp'], data_user['delegated'], Math.floor(new Date().getTime() / 1000), vote['author']])
 
             }
@@ -269,13 +269,13 @@ async function main() {
         callback(null, parseBlock(block))
     }));
 
-    while (true)
-   {
+  //  while (true)
+  // {
        //const user_count = await update_user();
        //const post_count = await update_post();
        //if (user_count === 0 && post_count === 0)
        //    await wait(15); // we are up to date, waiting one block
-    }
+   // }
 }
 
 
