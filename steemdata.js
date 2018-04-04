@@ -48,7 +48,8 @@ async function parseBlock(blocknb) {
                     await fn("insert into exist(id, post_id, author, permlink) values(NULL, ?, ?, ?)", [inserted['insertId'], post['author'], post['permlink']])
 
                     // update/add user
-                    const data = await get_user_data(post['author']);
+                    const properties = await get_propreties();
+                    const data = await get_user_data(post['author'], properties);
                     await fn("INSERT INTO user(`id`, `username`, `reputation`, `steem_posts`, `steem_join`, `followers`, `following`, `sp`, `delegated_sp`, last_updated) VALUES(NULL, ?,?,?,?,?,?,?,?,?)" +
                         " ON DUPLICATE KEY UPDATE reputation = ?, steem_posts = ?, followers = ?, following = ?, sp = ?, delegated_sp = ?, last_updated = ?",
                         [post['author'], data['reputation'], data['post_count'], data['join_date'], data['followers'], data['following'], data['sp'], data['delegated'], Math.floor(new Date().getTime() / 1000),
@@ -61,13 +62,13 @@ async function parseBlock(blocknb) {
             else if (tx[i]['operations'][y][0] === "vote") {
                 //console.log("vote");
                 const vote = tx[i]['operations'][y][1];
-                const exists = await fn("select 1 from exist where author = ? AND permlink = ?", [vote['author'], vote['permlink']]);
+                const exists = await fn("select post_id from exist where author = ? AND permlink = ?", [vote['author'], vote['permlink']]);
 
                 if (exists.length !== 0) {
                     const data = await get_steem_data(vote['author'], vote['permlink']);
 
-                    await fn("update post set reward = ?, comments = ?, upvotes = ?, last_updated = ? where author = ? AND permlink = ?",
-                        [data['reward'], data['comments'], data['upvotes'], time, vote['author'], vote['permlink']]);
+                    await fn("update post set reward = ?, comments = ?, upvotes = ?, last_updated = ? where id = ?",
+                        [data['reward'], data['comments'], data['upvotes'], time, exists[0]['post_id']]);
                 }
             }
         }
@@ -77,39 +78,30 @@ async function parseBlock(blocknb) {
 }
 
 
-function get_user_data(username) {
+function get_user_data(username, properties) {
     return new Promise(resolve => {
         const steemjs = setupSteemjs();
         steemjs.api.getAccounts([username], function (err, account) {
             if (err) {
                 console.log(err)
-                return resolve(get_user_data(username));
+                return resolve(get_user_data(username, properties));
             }
             const reputation = steemjs.formatter.reputation(account[0].reputation);
-            var vesting_shares, delegated_vesting_shares, received_vesting_shares, total_vesting_shares = null;
+            var vesting_shares, delegated_vesting_shares, received_vesting_shares = null;
             vesting_shares = account[0].vesting_shares;
             delegated_vesting_shares = account[0].delegated_vesting_shares;
             received_vesting_shares = account[0].received_vesting_shares;
 
-            steemjs.api.getDynamicGlobalProperties(function (err, properties) {
-                if (err) {
-                    console.log(err)
-                    return resolve(get_user_data(username));
-                }
-
-                total_vesting_shares = properties.total_vesting_shares;
-                let total_vesting_fund = properties.total_vesting_fund_steem;
-
                 // Handle Promises, when you’re sure the two functions were completed simply do:
-                var steem_power = steemjs.formatter.vestToSteem(vesting_shares, total_vesting_shares, total_vesting_fund);
-                var delegated_steem_power = steemjs.formatter.vestToSteem((received_vesting_shares.split(' ')[0] - delegated_vesting_shares.split(' ')[0]) + ' VESTS', total_vesting_shares, total_vesting_fund);
+                var steem_power = steemjs.formatter.vestToSteem(vesting_shares, properties['total_vesting_shares'], properties['total_vesting_fund']);
+                var delegated_steem_power = steemjs.formatter.vestToSteem((received_vesting_shares.split(' ')[0] - delegated_vesting_shares.split(' ')[0]) + ' VESTS', properties['total_vesting_shares'], properties['total_vesting_fund']);
 
                 steem_power = Math.floor(steem_power * 1000) / 1000
                 delegated_steem_power = Math.floor(delegated_steem_power * 1000) / 1000
                 steemjs.api.getFollowCount(username, function (err, follow_data) {
                     if (err) {
                         console.log(err)
-                        return resolve(get_user_data(username));
+                        return resolve(get_user_data(username, properties));
                     }
 
                     const followers = follow_data.follower_count;
@@ -131,6 +123,53 @@ function get_user_data(username) {
                 });
             });
         });
+}
+
+
+
+
+function get_propreties(){
+    const steemjs = setupSteemjs();
+
+    return new Promise(resolve => {
+        steemjs.api.getDynamicGlobalProperties(function (err, properties) {
+            if (err) {
+                console.log(err)
+                wait(0.1);
+                return resolve(get_propreties());
+            }
+
+            const total_vesting_shares = properties.total_vesting_shares;
+            const total_vesting_fund = properties.total_vesting_fund_steem;
+
+            resolve({"total_vesting_shares": total_vesting_shares, "total_vesting_fund": total_vesting_fund})
+
+        });
+    });
+}
+
+async function update_user() {
+
+    console.log("Updating user data");
+    return new Promise(async resolve => {
+        const now = Math.floor(new Date().getTime() / 1000);
+        const users = await fn("select id, username from user WHERE ?-last_updated > 10800", [now]);
+        for (let i = 0; i < users.length; i++) {
+            let b1 = new Date().getTime();
+            if (i % 50 === 0)
+                console.log("updating user data " + i + "/" + users.length)
+                var properties = await get_propreties();
+
+
+            const data = await get_user_data(users[i]['username'], properties);
+            await fn("UPDATE user SET reputation = ?, steem_posts = ?, followers = ?, following = ?, sp = ?, delegated_sp = ?, last_updated = ? WHERE id  = ?",
+                [data['reputation'], data['post_count'], data['followers'], data['following'], data['sp'], data['delegated'], Math.floor(new Date().getTime() / 1000), users[i]['id']])
+            console.log("updated user in "+ (new Date().getTime() - b1))
+        }
+
+        console.log("finished updating " + users.length.toString() + " users in " + (Math.floor(new Date().getTime() / 1000) - now).toString() + "seconds");
+
+        resolve(users.length);
     });
 }
 
@@ -156,28 +195,6 @@ function get_steem_data(username, permlink) {
 }
 
 
-async function update_user() {
-
-    console.log("Updating user data");
-    return new Promise(async resolve => {
-        const now = Math.floor(new Date().getTime() / 1000);
-        const users = await fn("select username from user WHERE ?-last_updated > 10800", [now]);
-        for (let i = 0; i < users.length; i++) {
-            if (i % 50 === 0)
-                console.log("updating user data " + i + "/" + users.length)
-            const data = await get_user_data(users[i]['username']);
-            await fn("UPDATE user SET reputation = ?, steem_posts = ?, followers = ?, following = ?, sp = ?, delegated_sp = ?, last_updated = ? WHERE username = ?",
-                [data['reputation'], data['post_count'], data['followers'], data['following'], data['sp'], data['delegated'], Math.floor(new Date().getTime() / 1000), users[i]['username']])
-        }
-
-        console.log("finished updating " + users.length.toString() + " users in " + (Math.floor(new Date().getTime() / 1000) - now).toString() + "seconds");
-
-        resolve(users.length);
-    });
-}
-
-
-
 function wait(time) {
     return new Promise(resolve => {
         setTimeout(() => resolve('☕'), time * 1000); // miliseconds to seconds
@@ -193,7 +210,7 @@ async function update_post()
     return new Promise(async resolve => {
         const _6_days_ago = Math.floor(new Date().getTime() / 1000) - 86400 * 6;
         const now = Math.floor(new Date().getTime() / 1000);
-        const posts = await fn("select author, permlink from post where date > ? AND ?-last_updated > 7200", [_6_days_ago,now]);
+        const posts = await fn("select id, author, permlink from post where date > ? AND ?-last_updated > 7200", [_6_days_ago,now]);
 
         for (let i = 0; i < posts.length; i++) {
             if (i%50 === 0)
@@ -201,8 +218,8 @@ async function update_post()
             const data = await
                 get_steem_data(posts[i]['author'], posts[i]['permlink']);
 
-            await fn("update post set reward = ?, comments = ?, upvotes = ?, last_updated = ? where author = ? AND permlink = ?",
-                [data['reward'], data['comments'], data['upvotes'],Math.floor(new Date().getTime() / 1000), posts[i]['author'], posts[i]['permlink']])
+            await fn("update post set reward = ?, comments = ?, upvotes = ?, last_updated = ? where id = ?",
+                [data['reward'], data['comments'], data['upvotes'],Math.floor(new Date().getTime() / 1000), posts[i]['id']])
         }
 
         console.log("finished updating "+posts.length.toString()+" posts in "+(Math.floor(new Date().getTime() / 1000)- now).toString()+ "seconds");
