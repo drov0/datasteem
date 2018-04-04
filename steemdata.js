@@ -155,16 +155,14 @@ async function update_user() {
         const now = Math.floor(new Date().getTime() / 1000);
         const users = await fn("select id, username from user WHERE ?-last_updated > 10800", [now]);
         for (let i = 0; i < users.length; i++) {
-            let b1 = new Date().getTime();
             if (i % 50 === 0)
                 console.log("updating user data " + i + "/" + users.length)
-                var properties = await get_propreties();
+            var properties = await get_propreties();
 
 
             const data = await get_user_data(users[i]['username'], properties);
             await fn("UPDATE user SET reputation = ?, steem_posts = ?, followers = ?, following = ?, sp = ?, delegated_sp = ?, last_updated = ? WHERE id  = ?",
                 [data['reputation'], data['post_count'], data['followers'], data['following'], data['sp'], data['delegated'], Math.floor(new Date().getTime() / 1000), users[i]['id']])
-            console.log("updated user in "+ (new Date().getTime() - b1))
         }
 
         console.log("finished updating " + users.length.toString() + " users in " + (Math.floor(new Date().getTime() / 1000) - now).toString() + "seconds");
