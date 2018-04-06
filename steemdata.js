@@ -6,17 +6,18 @@ const fn = promisify(connection.query).bind(connection);
 
 var es = require('event-stream') // npm install event-stream
 var util = require('util')
-const steem = new Client('https://api.steemit.com')
+const steem = new Client('https://rpc.buildteam.io')
 
 
 function setupSteemjs() {
     const steem = require('steem');
-    steem.api.setOptions({url: 'https://api.steemit.com'});
+    steem.api.setOptions({url: 'https://rpc.buildteam.io'});
     return steem;
 }
 
 
 async function parseBlock(blocknb) {
+    console.log(blocknb)
     const block = await steem.database.getBlock(blocknb)
     const tx = block['transactions'];
     const time = (new Date(Date.parse(block['timestamp']))).getTime() / 1000;
