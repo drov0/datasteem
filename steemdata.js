@@ -113,9 +113,10 @@ function get_root_post(author, permlink)
 {
     return new Promise(resolve => {
         const steemjs = setupSteemjs();
-        steemjs.api.getContent(author, permlink, function (err, post) {
+        steemjs.api.getContent(author, permlink, async function (err, post) {
             if (err) {
                 console.log(err);
+                await wait(0.4);
                 return resolve(get_root_post(author, permlink));
             }
             resolve({"root_permlink":post['root_permlink'], "root_author": post['root_author']});
@@ -126,9 +127,10 @@ function get_root_post(author, permlink)
 function get_user_data(username, properties) {
     return new Promise(resolve => {
         const steemjs = setupSteemjs();
-        steemjs.api.getAccounts([username], function (err, account) {
+        steemjs.api.getAccounts([username], async function (err, account) {
             if (err) {
-                console.log(err)
+                console.log(err);
+                await wait(0.4);
                 return resolve(get_user_data(username, properties));
             }
             const reputation = steemjs.formatter.reputation(account[0].reputation);
@@ -143,9 +145,10 @@ function get_user_data(username, properties) {
 
             steem_power = Math.floor(steem_power * 1000) / 1000
             delegated_steem_power = Math.floor(delegated_steem_power * 1000) / 1000
-            steemjs.api.getFollowCount(username, function (err, follow_data) {
+            steemjs.api.getFollowCount(username, async function (err, follow_data) {
                     if (err) {
                         console.log(err)
+                        await wait(0.4);
                         return resolve(get_user_data(username, properties));
                     }
 
@@ -177,10 +180,10 @@ function get_propreties(){
     const steemjs = setupSteemjs();
 
     return new Promise(resolve => {
-        steemjs.api.getDynamicGlobalProperties(function (err, properties) {
+        steemjs.api.getDynamicGlobalProperties(async function (err, properties) {
             if (err) {
                 console.log(err)
-                wait(0.1);
+                await wait(0.4);
                 return resolve(get_propreties());
             }
 
@@ -221,9 +224,10 @@ function get_steem_data(username, permlink) {
     return new Promise(resolve => {
         const steemjs = setupSteemjs();
 
-        steemjs.api.getContent(username, permlink, function (err, result) {
+        steemjs.api.getContent(username, permlink, async function (err, result) {
             if (err) {
-                console.log("api error");
+                console.log(err);
+                await wait(0.4);
                 resolve(get_steem_data(username, permlink));
                 return;
             }
