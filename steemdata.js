@@ -11,7 +11,7 @@ const steem = new Client('https://rpc.buildteam.io')
 
 function setupSteemjs() {
     const steem = require('steem');
-    steem.api.setOptions({url: 'https://rpc.buildteam.io'});
+    steem.api.setOptions({url: 'https://api.steemit.com'});
     return steem;
 }
 
