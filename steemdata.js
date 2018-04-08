@@ -39,12 +39,12 @@ async function parseBlock(blocknb) {
                     }
 
                     let tags = (json_metadata['tags'] ? json_metadata['tags'] : []);
-                    let img = "";
+                    var img = "";
 
                     if (json_metadata['image'] && json_metadata['image'].length > 0)
                         img = json_metadata['image'][0];
 
-                    connection.query("INSERT INTO `post` (`id`,`block_id`, `author`, `title`,`date`, `text`, `permlink`, `image`, `tag1`, `tag2`, `tag3`, `tag4`, `tag5`, `json_metadata`, `reward`, `comments`, `upvotes`, `last_updated`) VALUES(NULL,'?','?', '?', '?', '?', '?', '?', '?', '?', '?', '?', '?', '?',0,0,0,0)",
+                    connection.query("INSERT INTO `post` (`id`,`block_id`, `author`, `title`,`date`, `text`, `permlink`, `image`, `tag1`, `tag2`, `tag3`, `tag4`, `tag5`, `json_metadata`, `reward`, `comments`, `upvotes`, `last_updated`) VALUES(NULL,?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,0,0,0,0)",
                         [blocknb, post['author'], post['title'], time, post['body'], post['permlink'], img, post['parent_permlink'], (tags[1] ? tags[1] : ''), (tags[2] ? tags[2] : ''), (tags[3] ? tags[3] : ''), (tags[4] ? tags[4] : ''), post['json_metadata']], function (err) {
                             if (err) {
                                 console.log("insertion error")
