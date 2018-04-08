@@ -44,27 +44,40 @@ async function parseBlock(blocknb) {
                     if (json_metadata['image'] && json_metadata['image'].length > 0)
                         img = json_metadata['image'][0];
 
-                    const inserted =  await fn("INSERT INTO `post` (`id`,`block_id`, `author`, `title`,`date`, `text`, `permlink`, `image`, `tag1`, `tag2`, `tag3`, `tag4`, `tag5`, `json_metadata`, `reward`, `comments`, `upvotes`, `last_updated`) VALUES(NULL,?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,0,0,0,0)",
-                        [blocknb, post['author'], post['title'], time, post['body'], post['permlink'], img, post['parent_permlink'], (tags[1] ? tags[1] : ''), (tags[2] ? tags[2] : ''), (tags[3] ? tags[3] : ''), (tags[4] ? tags[4] : ''), post['json_metadata']])
+                    connection.query("INSERT INTO `post` (`id`,`block_id`, `author`, `title`,`date`, `text`, `permlink`, `image`, `tag1`, `tag2`, `tag3`, `tag4`, `tag5`, `json_metadata`, `reward`, `comments`, `upvotes`, `last_updated`) VALUES(NULL,?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,0,0,0,0)",
+                        [blocknb, post['author'], post['title'], time, post['body'], post['permlink'], img, post['parent_permlink'], (tags[1] ? tags[1] : ''), (tags[2] ? tags[2] : ''), (tags[3] ? tags[3] : ''), (tags[4] ? tags[4] : ''), post['json_metadata']], function (err) {
+                            if (err) {
+                                console.log("insertion error")
+                                console.log(err);
+                            }
+                        });
 
                     //await fn("insert into exist(id, post_id, author, permlink) values(NULL, ?, ?, ?)", [inserted['insertId'], post['author'], post['permlink']])
 
                     // update/add user
-                    const data = await get_user_data(post['author'], properties);
-                    await fn("INSERT INTO user(`id`, `username`, `reputation`, `steem_posts`, `steem_join`, `followers`, `following`, `sp`, `delegated_sp`, last_updated) VALUES(NULL, ?,?,?,?,?,?,?,?,?)" +
-                        " ON DUPLICATE KEY UPDATE reputation = ?, steem_posts = ?, followers = ?, following = ?, sp = ?, delegated_sp = ?, last_updated = ?",
-                        [post['author'], data['reputation'], data['post_count'], data['join_date'], data['followers'], data['following'], data['sp'], data['delegated'], Math.floor(new Date().getTime() / 1000),
-                            data['reputation'], data['post_count'], data['followers'], data['following'], data['sp'], data['delegated'], Math.floor(new Date().getTime() / 1000)])
+                    get_user_data(post['author'], properties).then(function (data) {
+                        connection.query("INSERT INTO user(`id`, `username`, `reputation`, `steem_posts`, `steem_join`, `followers`, `following`, `sp`, `delegated_sp`, last_updated) VALUES(NULL, ?,?,?,?,?,?,?,?,?)" +
+                            " ON DUPLICATE KEY UPDATE reputation = ?, steem_posts = ?, followers = ?, following = ?, sp = ?, delegated_sp = ?, last_updated = ?",
+                            [post['author'], data['reputation'], data['post_count'], data['join_date'], data['followers'], data['following'], data['sp'], data['delegated'], Math.floor(new Date().getTime() / 1000),
+                                data['reputation'], data['post_count'], data['followers'], data['following'], data['sp'], data['delegated'], Math.floor(new Date().getTime() / 1000)], function (err) {
+                                if (err) {
+                                    console.log("user insert error");
+                                    console.log(err);
+                                }
+                            });
+                    });
 
                 } else
                 {
                     // comment
-                    const root_post = await get_root_post(post['author'], post['permlink'])
-                    await fn("update post set comments = comments + 1 where author = ? AND permlink = ?",
-                        [root_post['root_author'], root_post['root_permlink']]);
+                    get_root_post(post['author'], post['permlink']).then(function (root_post) {
 
-                    await fn("UPDATE user SET steem_posts = steem_posts +1 WHERE username  = ?",
-                        [post['author']])
+                        fn("update post set comments = comments + 1 where author = ? AND permlink = ?",
+                            [root_post['root_author'], root_post['root_permlink']]);
+
+                        fn("UPDATE user SET steem_posts = steem_posts +1 WHERE username  = ?",
+                            [post['author']])
+                    });
 
                 }
             }
@@ -72,16 +85,22 @@ async function parseBlock(blocknb) {
 
             else if (tx[i]['operations'][y][0] === "vote") {
                 const vote = tx[i]['operations'][y][1];
-                const data = await get_steem_data(vote['author'], vote['permlink']);
 
-                await fn("update post set reward = ?, comments = ?, upvotes = ?, last_updated = ? where author = ? AND permlink = ?",
-                    [data['reward'], data['comments'], data['upvotes'], time, vote['author'], vote['permlink']]);
+                get_steem_data(vote['author'], vote['permlink']).then(function (data) {
+                    connection.query("update post set reward = ?, comments = ?, upvotes = ?, last_updated = ? where author = ? AND permlink = ?",
+                        [data['reward'], data['comments'], data['upvotes'], time, vote['author'], vote['permlink']], function (err) {
+                        if (err) {
+                            console.log("user insert error");
+                            console.log(err);
+                        }
+                        });
+                });
 
-                const data_user = await get_user_data(vote['author'], properties);
-
-                await fn("UPDATE user SET reputation = ?, steem_posts = ?, followers = ?, following = ?, sp = ?, delegated_sp = ?, last_updated = ? WHERE username  = ?",
-                    [data_user['reputation'], data_user['post_count'], data_user['followers'], data_user['following'], data_user['sp'], data_user['delegated'], Math.floor(new Date().getTime() / 1000), vote['author']])
-
+                get_user_data(vote['author'], properties).then(function(data_user)
+                {
+                    fn("UPDATE user SET reputation = ?, steem_posts = ?, followers = ?, following = ?, sp = ?, delegated_sp = ?, last_updated = ? WHERE username  = ?",
+                        [data_user['reputation'], data_user['post_count'], data_user['followers'], data_user['following'], data_user['sp'], data_user['delegated'], Math.floor(new Date().getTime() / 1000), vote['author']])
+                });
             }
         }
     }
