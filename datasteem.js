@@ -15,9 +15,11 @@ function setupSteemjs() {
     return steem;
 }
 
-
+/**
+ * From a block number, gets it and parses the informations within it to store them on the blockchain
+ */
 async function parseBlock(blocknb) {
-    console.log(blocknb)
+    console.log(blocknb);
     const block = await steem.database.getBlock(blocknb)
     const tx = block['transactions'];
     const time = (new Date(Date.parse(block['timestamp']))).getTime() / 1000;
@@ -80,7 +82,7 @@ async function parseBlock(blocknb) {
 
                 }
             }
-            // TODO : do group calls
+            // TODO : do group calls to optimize speed
 
             else if (tx[i]['operations'][y][0] === "vote") {
                 const vote = tx[i]['operations'][y][1];
@@ -107,7 +109,13 @@ async function parseBlock(blocknb) {
 
 }
 
-
+/**
+ * From a comment (username and permlink) get the original post(username and permlink) on which it was done
+ * @param {String} author - username of the author
+ * @param {String} permlink - permlink of the post
+ *
+ * @return {Object} an object with the original post permlink and author
+ */
 function get_root_post(author, permlink)
 {
     return new Promise(resolve => {
@@ -123,6 +131,14 @@ function get_root_post(author, permlink)
     });
 }
 
+/**
+ * Gets the steem data of an user
+ * @param {String} username - username to look up
+ * @param {String} properties - properties object obtained with get_propreties
+
+ * @return {Object} an object with the number of followers, number of followed, the simplified reputation,
+ * the steem power the delegated steem power, the number of posts made and the unix timestamp of the date when he joined
+ */
 function get_user_data(username, properties) {
     return new Promise(resolve => {
         const steemjs = setupSteemjs();
@@ -174,14 +190,18 @@ function get_user_data(username, properties) {
 
 
 
+/**
+ * Gets the steem blockchain propreties, usefull for steem power calculations.
 
+ * @return {Object} an object with the total vesting shares and total vesting fund.
+ */
 function get_propreties(){
     const steemjs = setupSteemjs();
 
     return new Promise(resolve => {
         steemjs.api.getDynamicGlobalProperties(async function (err, properties) {
             if (err) {
-                console.log(err)
+                console.log(err);
                 await wait(0.4);
                 return resolve(get_propreties());
             }
@@ -196,7 +216,13 @@ function get_propreties(){
 }
 
 
+/**
+ * Gets the steem data of a post aka the reward, number of comments, upvotes and text
+ * @param {String} username - username of the author
+ * @param {String} permlink - permlink of the post
 
+ * @return {Object} an object with the reward, number of comments, upvotes and text
+ */
 function get_steem_data(username, permlink) {
     return new Promise(resolve => {
         const steemjs = setupSteemjs();
