@@ -18,9 +18,7 @@ I strongly recommend the use of [pm2](http://pm2.keymetrics.io/) to handle the p
 
 # How do I run it ?
 
->  git pull git@github.com:drov0/datasteem.git
->  cd datasteem
->  npm i
+>  git pull git@github.com:drov0/datasteem.git && cd datasteem && npm i
 
 install the database via the db.sql file
 
