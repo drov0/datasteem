@@ -44,6 +44,7 @@ async function parseBlock(blocknb) {
                     if (json_metadata['image'] && json_metadata['image'].length > 0)
                         img = json_metadata['image'][0];
 
+                    // Insert post
                     connection.query("INSERT INTO `post` (`id`,`block_id`, `author`, `title`,`date`, `text`, `permlink`, `image`, `tag1`, `tag2`, `tag3`, `tag4`, `tag5`, `json_metadata`, `reward`, `comments`, `upvotes`, `last_updated`) VALUES(NULL,?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,0,0,0,0)",
                         [blocknb, post['author'], post['title'], time, post['body'], post['permlink'], img, post['parent_permlink'], (tags[1] ? tags[1] : ''), (tags[2] ? tags[2] : ''), (tags[3] ? tags[3] : ''), (tags[4] ? tags[4] : ''), post['json_metadata']], function (err) {
                             if (err) {
@@ -51,8 +52,6 @@ async function parseBlock(blocknb) {
                                 console.log(err);
                             }
                         });
-
-                    //await fn("insert into exist(id, post_id, author, permlink) values(NULL, ?, ?, ?)", [inserted['insertId'], post['author'], post['permlink']])
 
                     // update/add user
                     get_user_data(post['author'], properties).then(function (data) {
@@ -81,7 +80,7 @@ async function parseBlock(blocknb) {
 
                 }
             }
-            // TODO : Try to do group calls
+            // TODO : do group calls
 
             else if (tx[i]['operations'][y][0] === "vote") {
                 const vote = tx[i]['operations'][y][1];
@@ -196,28 +195,6 @@ function get_propreties(){
     });
 }
 
-async function update_user() {
-
-    console.log("Updating user data");
-    return new Promise(async resolve => {
-        const now = Math.floor(new Date().getTime() / 1000);
-        const users = await fn("select id, username from user WHERE ?-last_updated > 10800", [now]);
-        for (let i = 0; i < users.length; i++) {
-            if (i % 50 === 0)
-                console.log("updating user data " + i + "/" + users.length)
-            var properties = await get_propreties();
-
-
-            const data = await get_user_data(users[i]['username'], properties);
-            await fn("UPDATE user SET reputation = ?, steem_posts = ?, followers = ?, following = ?, sp = ?, delegated_sp = ?, last_updated = ? WHERE id  = ?",
-                [data['reputation'], data['post_count'], data['followers'], data['following'], data['sp'], data['delegated'], Math.floor(new Date().getTime() / 1000), users[i]['id']])
-        }
-
-        console.log("finished updating " + users.length.toString() + " users in " + (Math.floor(new Date().getTime() / 1000) - now).toString() + "seconds");
-
-        resolve(users.length);
-    });
-}
 
 
 function get_steem_data(username, permlink) {
@@ -249,39 +226,15 @@ function wait(time) {
 }
 
 
-
-
-async function update_post()
-{
-    console.log("Updating post data");
-    return new Promise(async resolve => {
-        const _6_days_ago = Math.floor(new Date().getTime() / 1000) - 86400 * 6;
-        const now = Math.floor(new Date().getTime() / 1000);
-        const posts = await fn("select id, author, permlink from post where date > ? AND ?-last_updated > 7200", [_6_days_ago,now]);
-
-        for (let i = 0; i < posts.length; i++) {
-            if (i%50 === 0)
-                console.log("updating post data "+i+"/"+posts.length)
-            const data = await
-                get_steem_data(posts[i]['author'], posts[i]['permlink']);
-
-            await fn("update post set reward = ?, comments = ?, upvotes = ?, last_updated = ? where id = ?",
-                [data['reward'], data['comments'], data['upvotes'],Math.floor(new Date().getTime() / 1000), posts[i]['id']])
-        }
-
-        console.log("finished updating "+posts.length.toString()+" posts in "+(Math.floor(new Date().getTime() / 1000)- now).toString()+ "seconds");
-
-        resolve(posts.length)
-    });
-}
-
 async function main() {
-    console.log("Starting steemdata");
+    console.log("Starting datasteem");
 
     let lastblock = await fn("SELECT DISTINCT block_id FROM `post` order by block_id desc LIMIT 1");
 
     let stream = null;
 
+    // if we are behind in terms of block we catch up
+    // don't try to catch up too many blocks though, the nodes will shut you down
     if (lastblock.length === 1) {
         lastblock = lastblock[0]['block_id'];
         stream = steem.blockchain.getBlockNumberStream({from: lastblock});
@@ -293,13 +246,6 @@ async function main() {
         callback(null, parseBlock(block))
     }));
 
-  //  while (true)
-  // {
-       //const user_count = await update_user();
-       //const post_count = await update_post();
-       //if (user_count === 0 && post_count === 0)
-       //    await wait(15); // we are up to date, waiting one block
-   // }
 }
 
 
